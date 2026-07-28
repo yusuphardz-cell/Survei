@@ -8,6 +8,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome untuk Ikon -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Supabase JS Client library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -30,7 +32,7 @@
             <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
             <div class="relative z-10">
                 <span class="inline-block bg-white/20 text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider mb-2">
-                    <i class="fa-solid me-1 fa-calendar-check"></i> Vote Tanggal
+                    <i class="fa-solid me-1 fa-calendar-check"></i> Vote Tanggal (Live Database)
                 </span>
                 <h1 class="text-2xl md:text-4xl font-extrabold tracking-tight">Survei Tanggal Penyelenggaraan Acara</h1>
                 <p class="mt-2 text-indigo-100 text-sm md:text-base max-w-xl mx-auto">
@@ -39,9 +41,17 @@
             </div>
         </header>
 
+        <!-- Peringatan Kredensial Supabase -->
+        <div id="configWarning" class="hidden bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-xl text-xs space-y-1">
+            <p class="font-bold flex items-center gap-2 text-sm">
+                <i class="fa-solid fa-triangle-exclamation text-amber-600"></i> Supabase Belum Terkonfigurasi
+            </p>
+            <p>Silakan ganti nilai <code>SUPABASE_URL</code> dan <code>SUPABASE_ANON_KEY</code> pada skrip dibagian bawah file ini dengan kredensial proyek Supabase Anda agar data dapat tersimpan secara permanen.</p>
+        </div>
+
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             
-            <!-- Kolom Form Votings (Lebar 2 Kolom pada Desktop) -->
+            <!-- Kolom Form Voting -->
             <main class="md:col-span-2 space-y-6">
                 
                 <!-- Kartu Formulir Pilihan Tanggal -->
@@ -127,8 +137,8 @@
                         </div>
 
                         <!-- Tombol Submit -->
-                        <button type="submit" 
-                            class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-xl shadow-lg shadow-indigo-600/30 transition transform active:scale-[0.98] flex items-center justify-center gap-2">
+                        <button type="submit" id="submitBtn"
+                            class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-xl shadow-lg shadow-indigo-600/30 transition transform active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-50">
                             <i class="fa-solid fa-paper-plane"></i> Kirim Pilihan Saya
                         </button>
                     </form>
@@ -141,7 +151,7 @@
                         Aktivitas Responden Terbaru
                     </h3>
                     <div id="commentsContainer" class="space-y-3 max-h-60 overflow-y-auto pr-1">
-                        <!-- Daftar partisipan akan dimuat di sini -->
+                        <p class="text-xs text-slate-400 italic">Memuat data dari database Supabase...</p>
                     </div>
                 </section>
 
@@ -150,11 +160,13 @@
             <!-- Sidebar Grafik & Ringkasan -->
             <aside class="space-y-6">
                 
-                <!-- Card Grafik Hasil Voting -->
+                <!-- Kartu Grafik Hasil Voting -->
                 <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200/80">
                     <div class="flex items-center justify-between mb-4">
                         <h2 class="text-lg font-bold text-slate-800">Hasil Sementara</h2>
-                        <span class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full font-medium">Real-time</span>
+                        <span class="text-xs bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-full font-medium flex items-center gap-1">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Supabase
+                        </span>
                     </div>
 
                     <div class="space-y-5">
@@ -201,7 +213,7 @@
                     </div>
                 </div>
 
-                <!-- Card Pemenang / Rekomendasi -->
+                <!-- Kartu Tanggal Terfavorit -->
                 <div class="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200/60 rounded-2xl p-5 text-amber-900">
                     <div class="flex items-center gap-3 mb-2">
                         <i class="fa-solid fa-trophy text-amber-500 text-xl"></i>
@@ -210,45 +222,83 @@
                     <p id="leadingDateText" class="text-sm text-slate-600">Belum ada suara yang masuk.</p>
                 </div>
 
-                <!-- Tombol Reset Simulasi -->
-                <button onclick="resetData()" class="w-full py-2 px-4 border border-slate-300 hover:bg-slate-100 text-slate-600 rounded-xl text-xs font-medium transition flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-rotate-right"></i> Reset Data Survei
-                </button>
-
             </aside>
 
         </div>
 
     </div>
 
-    <!-- Modal Notifikasi Berhasil -->
+    <!-- Modal Notifikasi Toast -->
     <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 translate-y-20 opacity-0 transition-all duration-300 z-50">
         <i class="fa-solid fa-circle-check text-emerald-400 text-lg"></i>
         <div>
-            <p class="font-semibold text-sm">Terima kasih!</p>
-            <p class="text-xs text-slate-300">Pilihan Anda berhasil direkam.</p>
+            <p class="font-semibold text-sm" id="toastTitle">Terima kasih!</p>
+            <p class="text-xs text-slate-300" id="toastDesc">Pilihan Anda berhasil direkam di database.</p>
         </div>
     </div>
 
-    <!-- Script Logika Survei -->
+    <!-- Script Integrasi Supabase & Logika Survei -->
     <script>
-        // Inisialisasi Data Dummy Awal
-        let surveyData = {
-            votes: { 17: 5, 22: 12, 29: 8 },
-            responses: [
-                { name: "Budi Santoso", date: "22", comment: "Tanggal 22 pas di akhir pekan." },
-                { name: "Siti Rahma", date: "17", comment: "Bisa lebih cepat lebih baik." },
-                { name: "Ahmad Rizki", date: "29", comment: "Menunggu gajian di akhir bulan." }
-            ]
-        };
+        // =================================================================
+        // KONFIGURASI SUPABASE
+        // Masukkan URL dan ANON KEY dari Supabase Dashboard Anda
+        // =================================================================
+        const SUPABASE_URL = 'https://cixizshbegxcnfvtboly.supabase.co/rest/v1/';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNpeGl6c2hiZWd4Y25mdnRib2x5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUxODUxMjgsImV4cCI6MjEwMDc2MTEyOH0.sLJlioAIpWDbPO7punf2rRzfPszpxOe1wb7DywcA2yA';
 
-        // Fungsi saat aplikasi dimuat
-        document.addEventListener("DOMContentLoaded", () => {
-            updateDashboard();
+        let supabaseClient = null;
+        let isConfigured = false;
+
+        // Inisialisasi Kredensial Supabase
+        if (SUPABASE_URL !== 'YOUR_SUPABASE_PROJECT_URL' && SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY') {
+            supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            isConfigured = true;
+        } else {
+            document.getElementById('configWarning').classList.remove('hidden');
+        }
+
+        // Variabel Penyimpanan Data Survei
+        let surveyResponses = [];
+
+        // Inisialisasi Aplikasi Saat Halaman Selesai Dimuat
+        document.addEventListener("DOMContentLoaded", async () => {
+            if (isConfigured) {
+                await fetchVotesFromSupabase();
+                subscribeRealtimeVotes();
+            } else {
+                renderDashboard([]);
+            }
         });
 
-        // Submit Vote Baru
-        function submitVote(e) {
+        // Ambil Data Suara dari Tabel Supabase
+        async function fetchVotesFromSupabase() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('survey_votes')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                surveyResponses = data || [];
+                renderDashboard(surveyResponses);
+            } catch (err) {
+                console.error("Gagal mengambil data dari Supabase:", err.message);
+            }
+        }
+
+        // Berlangganan Perubahan Data Real-time Supabase
+        function subscribeRealtimeVotes() {
+            supabaseClient
+                .channel('public:survey_votes')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'survey_votes' }, () => {
+                    fetchVotesFromSupabase();
+                })
+                .subscribe();
+        }
+
+        // Kirim Suara Baru ke Supabase
+        async function submitVote(e) {
             e.preventDefault();
 
             const name = document.getElementById("userName").value.trim();
@@ -258,37 +308,65 @@
             if (!name || !selectedDateInput) return;
 
             const selectedDate = selectedDateInput.value;
+            const submitBtn = document.getElementById("submitBtn");
 
-            // Tambahkan hitungan suara
-            surveyData.votes[selectedDate]++;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Menyimpan...`;
 
-            // Tambahkan data responden ke paling atas
-            surveyData.responses.unshift({
-                name: name,
-                date: selectedDate,
-                comment: comment
-            });
+            if (isConfigured) {
+                try {
+                    const { error } = await supabaseClient
+                        .from('survey_votes')
+                        .insert([
+                            { 
+                                name: name, 
+                                selected_date: selectedDate, 
+                                comment: comment || null 
+                            }
+                        ]);
 
-            // Reset Form
-            document.getElementById("voteForm").reset();
+                    if (error) throw error;
 
-            // Refresh UI
-            updateDashboard();
-
-            // Tampilkan Notifikasi Toast
-            showToast();
+                    showToast("Terima kasih!", "Pilihan Anda berhasil disimpan ke database.");
+                    document.getElementById("voteForm").reset();
+                } catch (err) {
+                    console.error("Gagal mengirim suara:", err.message);
+                    showToast("Gagal!", "Terjadi kesalahan saat menyimpan data.", true);
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Kirim Pilihan Saya`;
+                }
+            } else {
+                // Mode Simulasi Lokal (Jika Supabase Belum Dikonfigurasi)
+                surveyResponses.unshift({
+                    name: name,
+                    selected_date: selectedDate,
+                    comment: comment
+                });
+                renderDashboard(surveyResponses);
+                document.getElementById("voteForm").reset();
+                showToast("Simulasi Berhasil", "Data dimasukkan ke dalam tampilan simulasi lokal.");
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Kirim Pilihan Saya`;
+            }
         }
 
-        // Memperbarui UI/Grafik dan Komentar
-        function updateDashboard() {
-            const total = surveyData.votes[17] + surveyData.votes[22] + surveyData.votes[29];
+        // Perbarui Tampilan Dashboard
+        function renderDashboard(responses) {
+            const votesCount = { 17: 0, 22: 0, 29: 0 };
             
-            // Update Angka Total
+            responses.forEach(item => {
+                if (votesCount.hasOwnProperty(item.selected_date)) {
+                    votesCount[item.selected_date]++;
+                }
+            });
+
+            const total = responses.length;
             document.getElementById("totalVotes").innerText = total;
 
-            // Update statistik setiap tanggal
+            // Hitung Persentase & Panjang Batang Grafik
             [17, 22, 29].forEach(date => {
-                const count = surveyData.votes[date];
+                const count = votesCount[date];
                 const percent = total > 0 ? Math.round((count / total) * 100) : 0;
 
                 document.getElementById(`count${date}`).innerText = count;
@@ -296,7 +374,7 @@
                 document.getElementById(`bar${date}`).style.width = `${percent}%`;
             });
 
-            // Update Pemenang Sementara
+            // Hitung Tanggal Terfavorit
             const leadingText = document.getElementById("leadingDateText");
             if (total === 0) {
                 leadingText.innerText = "Belum ada suara yang masuk.";
@@ -304,11 +382,11 @@
                 let maxVotes = -1;
                 let topDates = [];
 
-                for (const date in surveyData.votes) {
-                    if (surveyData.votes[date] > maxVotes) {
-                        maxVotes = surveyData.votes[date];
+                for (const date in votesCount) {
+                    if (votesCount[date] > maxVotes) {
+                        maxVotes = votesCount[date];
                         topDates = [date];
-                    } else if (surveyData.votes[date] === maxVotes) {
+                    } else if (votesCount[date] === maxVotes) {
                         topDates.push(date);
                     }
                 }
@@ -320,25 +398,25 @@
                 }
             }
 
-            // Render Daftar Komentar Responden
+            // Tampilkan Komentar Terkini
             const commentsContainer = document.getElementById("commentsContainer");
             commentsContainer.innerHTML = "";
 
-            if (surveyData.responses.length === 0) {
+            if (responses.length === 0) {
                 commentsContainer.innerHTML = `<p class="text-xs text-slate-400 italic">Belum ada respons.</p>`;
             } else {
-                surveyData.responses.forEach(res => {
+                responses.forEach(res => {
                     const commentEl = document.createElement("div");
                     commentEl.className = "p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs text-slate-700";
                     
                     let dateColorClass = "bg-indigo-100 text-indigo-700";
-                    if(res.date === "22") dateColorClass = "bg-emerald-100 text-emerald-700";
-                    if(res.date === "29") dateColorClass = "bg-purple-100 text-purple-700";
+                    if(res.selected_date === "22") dateColorClass = "bg-emerald-100 text-emerald-700";
+                    if(res.selected_date === "29") dateColorClass = "bg-purple-100 text-purple-700";
 
                     commentEl.innerHTML = `
                         <div class="flex items-center justify-between mb-1">
                             <span class="font-semibold text-slate-800">${escapeHtml(res.name)}</span>
-                            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${dateColorClass}">Tgl ${res.date}</span>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${dateColorClass}">Tgl ${res.selected_date}</span>
                         </div>
                         ${res.comment ? `<p class="text-slate-600 mt-1 italic">"${escapeHtml(res.comment)}"</p>` : ''}
                     `;
@@ -348,25 +426,26 @@
         }
 
         // Tampilkan Notifikasi Toast
-        function showToast() {
+        function showToast(title, desc, isError = false) {
             const toast = document.getElementById("toast");
+            document.getElementById("toastTitle").innerText = title;
+            document.getElementById("toastDesc").innerText = desc;
+
+            if (isError) {
+                toast.classList.replace("bg-slate-900", "bg-rose-900");
+            } else {
+                toast.classList.replace("bg-rose-900", "bg-slate-900");
+            }
+
             toast.classList.remove("translate-y-20", "opacity-0");
             setTimeout(() => {
                 toast.classList.add("translate-y-20", "opacity-0");
-            }, 3000);
+            }, 3500);
         }
 
-        // Reset Data
-        function resetData() {
-            surveyData = {
-                votes: { 17: 0, 22: 0, 29: 0 },
-                responses: []
-            };
-            updateDashboard();
-        }
-
-        // Helper Sanitisasi HTML
+        // Pembersihan Karakter Khusus (Keamanan XSS)
         function escapeHtml(text) {
+            if(!text) return "";
             return text
                 .replace(/&/g, "&amp;")
                 .replace(/</g, "&lt;")

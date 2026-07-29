@@ -3,455 +3,230 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Survei Pemilihan Tanggal Acara</title>
-    <!-- Tailwind CSS CDN -->
+    <title>Presensi Peserta</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Awesome untuk Ikon -->
+    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Supabase JS Client library -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#4F46E5',
-                        secondary: '#10B981',
-                    }
-                }
-            }
-        }
-    </script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
 </head>
-<body class="bg-slate-50 min-h-screen font-sans text-slate-800 antialiased p-4 md:p-8">
+<body class="bg-slate-100 min-h-screen flex flex-col justify-between text-slate-800">
 
-    <div class="max-w-3xl mx-auto space-y-6">
-        
-        <!-- Header / Banner -->
-        <header class="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-6 md:p-8 text-white shadow-xl text-center relative overflow-hidden">
-            <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
-            <div class="relative z-10">
-                <span class="inline-block bg-white/20 text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider mb-2">
-                    <i class="fa-solid me-1 fa-calendar-check"></i> Vote Tanggal (Live Database)
-                </span>
-                <h1 class="text-2xl md:text-4xl font-extrabold tracking-tight">Survei Tanggal Penyelenggaraan Acara</h1>
-                <p class="mt-2 text-indigo-100 text-sm md:text-base max-w-xl mx-auto">
-                    Suara Anda menentukan kapan acara kita akan dilaksanakan. Silakan pilih salah satu tanggal favorit Anda di bawah ini!
-                </p>
+    <!-- Header -->
+    <header class="bg-blue-600 text-white shadow-sm">
+        <div class="max-w-md mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-clipboard-check text-xl"></i>
+                <h1 class="font-bold text-base">Presensi Kehadiran</h1>
             </div>
-        </header>
-
-        <!-- Peringatan Kredensial Supabase -->
-        <div id="configWarning" class="hidden bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-xl text-xs space-y-1">
-            <p class="font-bold flex items-center gap-2 text-sm">
-                <i class="fa-solid fa-triangle-exclamation text-amber-600"></i> Supabase Belum Terkonfigurasi
-            </p>
-            <p>Silakan ganti nilai <code>SUPABASE_URL</code> dan <code>SUPABASE_ANON_KEY</code> pada skrip dibagian bawah file ini dengan kredensial proyek Supabase Anda agar data dapat tersimpan secara permanen.</p>
+            <button onclick="toggleView()" id="navBtn" class="text-xs bg-blue-700 hover:bg-blue-800 px-3 py-1.5 rounded-lg font-medium transition">
+                <i class="fa-solid fa-list-check mr-1"></i> Lihat Data
+            </button>
         </div>
+    </header>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            
-            <!-- Kolom Form Voting -->
-            <main class="md:col-span-2 space-y-6">
-                
-                <!-- Kartu Formulir Pilihan Tanggal -->
-                <section class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200/80">
-                    <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                        <i class="fa-solid fa-vote-yea text-indigo-600"></i>
-                        Pilih Tanggal Acara
-                    </h2>
+    <!-- Konten Utama -->
+    <main class="max-w-md w-full mx-auto p-4 flex-grow">
+        
+        <!-- Borang Presensi -->
+        <div id="formSection" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+            <div class="mb-4">
+                <h2 class="font-bold text-lg text-slate-900">Sila Isi Kehadiran Anda</h2>
+                <p class="text-xs text-slate-500 mt-0.5">Pastikan maklumat yang dimasukkan adalah betul.</p>
+            </div>
 
-                    <form id="voteForm" onsubmit="submitVote(event)" class="space-y-4">
-                        
-                        <!-- Input Nama -->
-                        <div>
-                            <label for="userName" class="block text-sm font-medium text-slate-700 mb-1">Nama Lengkap</label>
-                            <input type="text" id="userName" required placeholder="Masukkan nama Anda..." 
-                                class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition outline-none text-slate-800 placeholder-slate-400">
-                        </div>
+            <form id="presenceForm" onsubmit="handleFormSubmit(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">NIK</label>
+                    <input type="text" id="nik" required placeholder="Contoh: 12345678" 
+                        class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white text-sm">
+                </div>
 
-                        <!-- Opsi-Opsi Tanggal -->
-                        <div class="space-y-3 pt-2">
-                            <label class="block text-sm font-medium text-slate-700">Pilihan Tanggal Tersedia:</label>
-                            
-                            <!-- Opsi Tanggal 17 -->
-                            <label class="relative flex items-center p-4 rounded-xl border-2 border-slate-200 cursor-pointer hover:border-indigo-300 transition group has-[:checked]:border-indigo-600 has-[:checked]:bg-indigo-50/50">
-                                <input type="radio" name="selectedDate" value="17" required class="w-4 h-4 text-indigo-600 border-slate-300 focus:ring-indigo-500">
-                                <div class="ml-4 flex-1 flex items-center justify-between">
-                                    <div class="flex items-center gap-3">
-                                        <div class="bg-indigo-100 text-indigo-700 font-bold p-2.5 rounded-lg text-center min-w-[50px]">
-                                            <span class="block text-xs uppercase text-indigo-500">Tgl</span>
-                                            <span class="text-xl leading-none">17</span>
-                                        </div>
-                                        <div>
-                                            <span class="font-semibold text-slate-800 block">Tanggal 17</span>
-                                            <span class="text-xs text-slate-500">Opsi Pertengahan Bulan</span>
-                                        </div>
-                                    </div>
-                                    <i class="fa-regular fa-circle-check text-indigo-600 opacity-0 group-has-[:checked]:opacity-100 text-xl transition"></i>
-                                </div>
-                            </label>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Nama Lengkap</label>
+                    <input type="text" id="nama" required placeholder="Contoh: Budi Santoso" 
+                        class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white text-sm">
+                </div>
 
-                            <!-- Opsi Tanggal 22 -->
-                            <label class="relative flex items-center p-4 rounded-xl border-2 border-slate-200 cursor-pointer hover:border-indigo-300 transition group has-[:checked]:border-indigo-600 has-[:checked]:bg-indigo-50/50">
-                                <input type="radio" name="selectedDate" value="22" class="w-4 h-4 text-indigo-600 border-slate-300 focus:ring-indigo-500">
-                                <div class="ml-4 flex-1 flex items-center justify-between">
-                                    <div class="flex items-center gap-3">
-                                        <div class="bg-emerald-100 text-emerald-700 font-bold p-2.5 rounded-lg text-center min-w-[50px]">
-                                            <span class="block text-xs uppercase text-emerald-500">Tgl</span>
-                                            <span class="text-xl leading-none">22</span>
-                                        </div>
-                                        <div>
-                                            <span class="font-semibold text-slate-800 block">Tanggal 22</span>
-                                            <span class="text-xs text-slate-500">Opsi Akhir Pekan/Minggu Ke-3</span>
-                                        </div>
-                                    </div>
-                                    <i class="fa-regular fa-circle-check text-indigo-600 opacity-0 group-has-[:checked]:opacity-100 text-xl transition"></i>
-                                </div>
-                            </label>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Bagian</label>
+                    <input type="text" id="bagian" required placeholder="Contoh: Pemasaran / IT / HR" 
+                        class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white text-sm">
+                </div>
 
-                            <!-- Opsi Tanggal 29 -->
-                            <label class="relative flex items-center p-4 rounded-xl border-2 border-slate-200 cursor-pointer hover:border-indigo-300 transition group has-[:checked]:border-indigo-600 has-[:checked]:bg-indigo-50/50">
-                                <input type="radio" name="selectedDate" value="29" class="w-4 h-4 text-indigo-600 border-slate-300 focus:ring-indigo-500">
-                                <div class="ml-4 flex-1 flex items-center justify-between">
-                                    <div class="flex items-center gap-3">
-                                        <div class="bg-purple-100 text-purple-700 font-bold p-2.5 rounded-lg text-center min-w-[50px]">
-                                            <span class="block text-xs uppercase text-purple-500">Tgl</span>
-                                            <span class="text-xl leading-none">29</span>
-                                        </div>
-                                        <div>
-                                            <span class="font-semibold text-slate-800 block">Tanggal 29</span>
-                                            <span class="text-xs text-slate-500">Opsi Akhir Bulan</span>
-                                        </div>
-                                    </div>
-                                    <i class="fa-regular fa-circle-check text-indigo-600 opacity-0 group-has-[:checked]:opacity-100 text-xl transition"></i>
-                                </div>
-                            </label>
-                        </div>
-
-                        <!-- Catatan / Komentar Tambahan -->
-                        <div>
-                            <label for="userComment" class="block text-sm font-medium text-slate-700 mb-1">Catatan / Alasan (Opsional)</label>
-                            <textarea id="userComment" rows="2" placeholder="Tuliskan catatan tambahan jika ada..." 
-                                class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition outline-none text-slate-800 placeholder-slate-400"></textarea>
-                        </div>
-
-                        <!-- Tombol Submit -->
-                        <button type="submit" id="submitBtn"
-                            class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-xl shadow-lg shadow-indigo-600/30 transition transform active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-50">
-                            <i class="fa-solid fa-paper-plane"></i> Kirim Pilihan Saya
-                        </button>
-                    </form>
-                </section>
-
-                <!-- Daftar Komentar Responden -->
-                <section class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200/80">
-                    <h3 class="text-md font-bold text-slate-800 mb-4 flex items-center gap-2">
-                        <i class="fa-solid fa-comments text-indigo-600"></i>
-                        Aktivitas Responden Terbaru
-                    </h3>
-                    <div id="commentsContainer" class="space-y-3 max-h-60 overflow-y-auto pr-1">
-                        <p class="text-xs text-slate-400 italic">Memuat data dari database Supabase...</p>
-                    </div>
-                </section>
-
-            </main>
-
-            <!-- Sidebar Grafik & Ringkasan -->
-            <aside class="space-y-6">
-                
-                <!-- Kartu Grafik Hasil Voting -->
-                <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200/80">
-                    <div class="flex items-center justify-between mb-4">
-                        <h2 class="text-lg font-bold text-slate-800">Hasil Sementara</h2>
-                        <span class="text-xs bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-full font-medium flex items-center gap-1">
-                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Supabase
-                        </span>
-                    </div>
-
-                    <div class="space-y-5">
-                        
-                        <!-- Progress Tanggal 17 -->
-                        <div class="space-y-1.5">
-                            <div class="flex justify-between text-sm">
-                                <span class="font-medium text-slate-700">Tanggal 17</span>
-                                <span class="font-semibold text-slate-900"><span id="count17">0</span> Suara (<span id="percent17">0%</span>)</span>
-                            </div>
-                            <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
-                                <div id="bar17" class="bg-indigo-600 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
-                            </div>
-                        </div>
-
-                        <!-- Progress Tanggal 22 -->
-                        <div class="space-y-1.5">
-                            <div class="flex justify-between text-sm">
-                                <span class="font-medium text-slate-700">Tanggal 22</span>
-                                <span class="font-semibold text-slate-900"><span id="count22">0</span> Suara (<span id="percent22">0%</span>)</span>
-                            </div>
-                            <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
-                                <div id="bar22" class="bg-emerald-500 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
-                            </div>
-                        </div>
-
-                        <!-- Progress Tanggal 29 -->
-                        <div class="space-y-1.5">
-                            <div class="flex justify-between text-sm">
-                                <span class="font-medium text-slate-700">Tanggal 29</span>
-                                <span class="font-semibold text-slate-900"><span id="count29">0</span> Suara (<span id="percent29">0%</span>)</span>
-                            </div>
-                            <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
-                                <div id="bar29" class="bg-purple-600 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
-                            </div>
-                        </div>
-
-                    </div>
-
-                    <!-- Total Pemilih -->
-                    <div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-slate-600 text-sm">
-                        <span>Total Partisipan:</span>
-                        <span id="totalVotes" class="font-bold text-slate-900 text-base">0</span>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Status Kehadiran</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="border border-slate-200 rounded-xl p-3 flex items-center space-x-2 cursor-pointer hover:bg-slate-50 transition">
+                            <input type="radio" name="status" value="Hadir" required class="text-blue-600 focus:ring-blue-500">
+                            <span class="text-sm font-medium text-emerald-700"><i class="fa-solid fa-circle-check mr-1"></i> Hadir</span>
+                        </label>
+                        <label class="border border-slate-200 rounded-xl p-3 flex items-center space-x-2 cursor-pointer hover:bg-slate-50 transition">
+                            <input type="radio" name="status" value="Tidak Hadir" required class="text-blue-600 focus:ring-blue-500">
+                            <span class="text-sm font-medium text-rose-700"><i class="fa-solid fa-circle-xmark mr-1"></i> Tidak Hadir</span>
+                        </label>
                     </div>
                 </div>
 
-                <!-- Kartu Tanggal Terfavorit -->
-                <div class="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200/60 rounded-2xl p-5 text-amber-900">
-                    <div class="flex items-center gap-3 mb-2">
-                        <i class="fa-solid fa-trophy text-amber-500 text-xl"></i>
-                        <h3 class="font-bold text-slate-800">Tanggal Terfavorit</h3>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl shadow-md transition text-sm flex items-center justify-center space-x-2">
+                    <i class="fa-solid fa-paper-plane"></i>
+                    <span>Hantar Presensi</span>
+                </button>
+            </form>
+        </div>
+
+        <!-- Senarai Data / Rekod -->
+        <div id="dataSection" class="hidden space-y-4">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+                <div class="flex justify-between items-center mb-4">
+                    <div>
+                        <h2 class="font-bold text-lg text-slate-900">Rekod Kehadiran</h2>
+                        <p class="text-xs text-slate-500">Jumlah: <span id="totalCount" class="font-semibold text-slate-700">0</span> orang</p>
                     </div>
-                    <p id="leadingDateText" class="text-sm text-slate-600">Belum ada suara yang masuk.</p>
+                    <button onclick="downloadCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition flex items-center space-x-1">
+                        <i class="fa-solid fa-file-excel"></i>
+                        <span>CSV</span>
+                    </button>
                 </div>
 
-            </aside>
+                <div id="recordList" class="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+                    <!-- Senarai data dimasukkan secara dinamik -->
+                </div>
 
+                <div id="emptyMsg" class="text-center py-10 text-slate-400 text-sm hidden">
+                    <i class="fa-solid fa-folder-open text-2xl mb-1"></i>
+                    <p>Belum ada data direkodkan.</p>
+                </div>
+            </div>
         </div>
 
-    </div>
+    </main>
 
-    <!-- Modal Notifikasi Toast -->
-    <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 translate-y-20 opacity-0 transition-all duration-300 z-50">
-        <i class="fa-solid fa-circle-check text-emerald-400 text-lg"></i>
-        <div>
-            <p class="font-semibold text-sm" id="toastTitle">Terima kasih!</p>
-            <p class="text-xs text-slate-300" id="toastDesc">Pilihan Anda berhasil direkam di database.</p>
+    <!-- Modal Notifikasi -->
+    <div id="customModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl max-w-xs w-full p-6 text-center space-y-3 shadow-lg">
+            <div class="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-lg">
+                <i class="fa-solid fa-check"></i>
+            </div>
+            <h3 class="font-bold text-base text-slate-900">Berjaya Disimpan!</h3>
+            <p class="text-xs text-slate-500">Kehadiran anda telah berjaya direkodkan.</p>
+            <button onclick="closeModal()" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium py-2.5 rounded-xl transition">
+                Tutup
+            </button>
         </div>
     </div>
 
-    <!-- Script Integrasi Supabase & Logika Survei -->
+    <!-- Footer -->
+    <footer class="text-center py-4 text-xs text-slate-400">
+        &copy; 2026 Presensi Pintar Mobile
+    </footer>
+
+    <!-- Logik Skrip -->
     <script>
-        // =================================================================
-        // KONFIGURASI SUPABASE
-        // Masukkan URL dan ANON KEY dari Supabase Dashboard Anda
-        // =================================================================
-        const SUPABASE_URL = 'https://cixizshbegxcnfvtboly.supabase.co/rest/v1/';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNpeGl6c2hiZWd4Y25mdnRib2x5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUxODUxMjgsImV4cCI6MjEwMDc2MTEyOH0.sLJlioAIpWDbPO7punf2rRzfPszpxOe1wb7DywcA2yA';
+        let records = JSON.parse(localStorage.getItem('simple_attendance')) || [];
+        let isViewMode = false;
 
-        let supabaseClient = null;
-        let isConfigured = false;
+        function toggleView() {
+            isViewMode = !isViewMode;
+            const formSec = document.getElementById('formSection');
+            const dataSec = document.getElementById('dataSection');
+            const navBtn = document.getElementById('navBtn');
 
-        // Inisialisasi Kredensial Supabase
-        if (SUPABASE_URL !== 'YOUR_SUPABASE_PROJECT_URL' && SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY') {
-            supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            isConfigured = true;
-        } else {
-            document.getElementById('configWarning').classList.remove('hidden');
-        }
-
-        // Variabel Penyimpanan Data Survei
-        let surveyResponses = [];
-
-        // Inisialisasi Aplikasi Saat Halaman Selesai Dimuat
-        document.addEventListener("DOMContentLoaded", async () => {
-            if (isConfigured) {
-                await fetchVotesFromSupabase();
-                subscribeRealtimeVotes();
+            if (isViewMode) {
+                formSec.classList.add('hidden');
+                dataSec.classList.remove('hidden');
+                navBtn.innerHTML = '<i class="fa-solid fa-pen-to-square mr-1"></i> Isi Borang';
+                renderRecords();
             } else {
-                renderDashboard([]);
-            }
-        });
-
-        // Ambil Data Suara dari Tabel Supabase
-        async function fetchVotesFromSupabase() {
-            try {
-                const { data, error } = await supabaseClient
-                    .from('survey_votes')
-                    .select('*')
-                    .order('created_at', { ascending: false });
-
-                if (error) throw error;
-
-                surveyResponses = data || [];
-                renderDashboard(surveyResponses);
-            } catch (err) {
-                console.error("Gagal mengambil data dari Supabase:", err.message);
+                dataSec.classList.add('hidden');
+                formSec.classList.remove('hidden');
+                navBtn.innerHTML = '<i class="fa-solid fa-list-check mr-1"></i> Lihat Data';
             }
         }
 
-        // Berlangganan Perubahan Data Real-time Supabase
-        function subscribeRealtimeVotes() {
-            supabaseClient
-                .channel('public:survey_votes')
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'survey_votes' }, () => {
-                    fetchVotesFromSupabase();
-                })
-                .subscribe();
-        }
-
-        // Kirim Suara Baru ke Supabase
-        async function submitVote(e) {
+        function handleFormSubmit(e) {
             e.preventDefault();
-
-            const name = document.getElementById("userName").value.trim();
-            const selectedDateInput = document.querySelector('input[name="selectedDate"]:checked');
-            const comment = document.getElementById("userComment").value.trim();
-
-            if (!name || !selectedDateInput) return;
-
-            const selectedDate = selectedDateInput.value;
-            const submitBtn = document.getElementById("submitBtn");
-
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Menyimpan...`;
-
-            if (isConfigured) {
-                try {
-                    const { error } = await supabaseClient
-                        .from('survey_votes')
-                        .insert([
-                            { 
-                                name: name, 
-                                selected_date: selectedDate, 
-                                comment: comment || null 
-                            }
-                        ]);
-
-                    if (error) throw error;
-
-                    showToast("Terima kasih!", "Pilihan Anda berhasil disimpan ke database.");
-                    document.getElementById("voteForm").reset();
-                } catch (err) {
-                    console.error("Gagal mengirim suara:", err.message);
-                    showToast("Gagal!", "Terjadi kesalahan saat menyimpan data.", true);
-                } finally {
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Kirim Pilihan Saya`;
-                }
-            } else {
-                // Mode Simulasi Lokal (Jika Supabase Belum Dikonfigurasi)
-                surveyResponses.unshift({
-                    name: name,
-                    selected_date: selectedDate,
-                    comment: comment
-                });
-                renderDashboard(surveyResponses);
-                document.getElementById("voteForm").reset();
-                showToast("Simulasi Berhasil", "Data dimasukkan ke dalam tampilan simulasi lokal.");
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Kirim Pilihan Saya`;
-            }
-        }
-
-        // Perbarui Tampilan Dashboard
-        function renderDashboard(responses) {
-            const votesCount = { 17: 0, 22: 0, 29: 0 };
             
-            responses.forEach(item => {
-                if (votesCount.hasOwnProperty(item.selected_date)) {
-                    votesCount[item.selected_date]++;
-                }
-            });
+            const nik = document.getElementById('nik').value.trim();
+            const nama = document.getElementById('nama').value.trim();
+            const bagian = document.getElementById('bagian').value.trim();
+            const status = document.querySelector('input[name="status"]:checked').value;
+            const time = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
 
-            const total = responses.length;
-            document.getElementById("totalVotes").innerText = total;
+            const newEntry = { nik, nama, bagian, status, time };
+            
+            records.unshift(newEntry);
+            localStorage.setItem('simple_attendance', JSON.stringify(records));
 
-            // Hitung Persentase & Panjang Batang Grafik
-            [17, 22, 29].forEach(date => {
-                const count = votesCount[date];
-                const percent = total > 0 ? Math.round((count / total) * 100) : 0;
-
-                document.getElementById(`count${date}`).innerText = count;
-                document.getElementById(`percent${date}`).innerText = `${percent}%`;
-                document.getElementById(`bar${date}`).style.width = `${percent}%`;
-            });
-
-            // Hitung Tanggal Terfavorit
-            const leadingText = document.getElementById("leadingDateText");
-            if (total === 0) {
-                leadingText.innerText = "Belum ada suara yang masuk.";
-            } else {
-                let maxVotes = -1;
-                let topDates = [];
-
-                for (const date in votesCount) {
-                    if (votesCount[date] > maxVotes) {
-                        maxVotes = votesCount[date];
-                        topDates = [date];
-                    } else if (votesCount[date] === maxVotes) {
-                        topDates.push(date);
-                    }
-                }
-
-                if (topDates.length === 1) {
-                    leadingText.innerHTML = `Tanggal <strong>${topDates[0]}</strong> memimpin dengan <strong>${maxVotes} suara</strong>.`;
-                } else {
-                    leadingText.innerHTML = `Hasil seimbang antara tanggal <strong>${topDates.join(" & ")}</strong> masing-masing dengan <strong>${maxVotes} suara</strong>.`;
-                }
-            }
-
-            // Tampilkan Komentar Terkini
-            const commentsContainer = document.getElementById("commentsContainer");
-            commentsContainer.innerHTML = "";
-
-            if (responses.length === 0) {
-                commentsContainer.innerHTML = `<p class="text-xs text-slate-400 italic">Belum ada respons.</p>`;
-            } else {
-                responses.forEach(res => {
-                    const commentEl = document.createElement("div");
-                    commentEl.className = "p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs text-slate-700";
-                    
-                    let dateColorClass = "bg-indigo-100 text-indigo-700";
-                    if(res.selected_date === "22") dateColorClass = "bg-emerald-100 text-emerald-700";
-                    if(res.selected_date === "29") dateColorClass = "bg-purple-100 text-purple-700";
-
-                    commentEl.innerHTML = `
-                        <div class="flex items-center justify-between mb-1">
-                            <span class="font-semibold text-slate-800">${escapeHtml(res.name)}</span>
-                            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${dateColorClass}">Tgl ${res.selected_date}</span>
-                        </div>
-                        ${res.comment ? `<p class="text-slate-600 mt-1 italic">"${escapeHtml(res.comment)}"</p>` : ''}
-                    `;
-                    commentsContainer.appendChild(commentEl);
-                });
-            }
+            document.getElementById('presenceForm').reset();
+            document.getElementById('customModal').classList.remove('hidden');
+            document.getElementById('customModal').classList.add('flex');
         }
 
-        // Tampilkan Notifikasi Toast
-        function showToast(title, desc, isError = false) {
-            const toast = document.getElementById("toast");
-            document.getElementById("toastTitle").innerText = title;
-            document.getElementById("toastDesc").innerText = desc;
-
-            if (isError) {
-                toast.classList.replace("bg-slate-900", "bg-rose-900");
-            } else {
-                toast.classList.replace("bg-rose-900", "bg-slate-900");
-            }
-
-            toast.classList.remove("translate-y-20", "opacity-0");
-            setTimeout(() => {
-                toast.classList.add("translate-y-20", "opacity-0");
-            }, 3500);
+        function closeModal() {
+            document.getElementById('customModal').classList.remove('flex');
+            document.getElementById('customModal').classList.add('hidden');
+            toggleView(); // Beralih otomatis ke senarai data
         }
 
-        // Pembersihan Karakter Khusus (Keamanan XSS)
+        function renderRecords() {
+            const listContainer = document.getElementById('recordList');
+            const emptyMsg = document.getElementById('emptyMsg');
+            const totalCount = document.getElementById('totalCount');
+
+            totalCount.textContent = records.length;
+            listContainer.innerHTML = '';
+
+            if (records.length === 0) {
+                emptyMsg.classList.remove('hidden');
+                return;
+            } else {
+                emptyMsg.classList.add('hidden');
+            }
+
+            records.forEach(item => {
+                const statusBadge = item.status === 'Hadir' 
+                    ? '<span class="bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs px-2 py-0.5 rounded-full font-medium">Hadir</span>'
+                    : '<span class="bg-rose-50 text-rose-700 border border-rose-200 text-xs px-2 py-0.5 rounded-full font-medium">Tidak Hadir</span>';
+
+                const card = document.createElement('div');
+                card.className = 'p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1.5';
+                card.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-slate-800 text-sm">${escapeHtml(item.nama)}</span>
+                        ${statusBadge}
+                    </div>
+                    <div class="text-slate-500 flex justify-between">
+                        <span>NIK: <strong class="text-slate-700">${escapeHtml(item.nik)}</strong></span>
+                        <span>Bagian: <strong class="text-slate-700">${escapeHtml(item.bagian)}</strong></span>
+                    </div>
+                    <div class="text-[10px] text-slate-400 text-right pt-1">Waktu: ${item.time}</div>
+                `;
+                listContainer.appendChild(card);
+            });
+        }
+
+        function downloadCSV() {
+            if (records.length === 0) return;
+            let csv = "NIK,Nama,Bagian,Status,Waktu\r\n";
+            records.forEach(r => {
+                csv += `"${r.nik}","${r.nama}","${r.bagian}","${r.status}","${r.time}"\r\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'data_kehadiran.csv';
+            a.click();
+        }
+
         function escapeHtml(text) {
-            if(!text) return "";
-            return text
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
+            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+            return text.replace(/[&<>"']/g, m => map[m]);
         }
     </script>
 </body>
